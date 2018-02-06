@@ -1,27 +1,27 @@
 #include<iostream>
 #include<vector>
 #define Max 4
-
+using namespace std;
 //Container 
 struct Game_Grid{
     vector <vector<Grid_Cell> > Grid;
     short int size;
-}
+};
 
 struct Player{
     short int Wich_Player; //1 , 2
     short int Max_Depth;
-}
+};
 
 struct Grid_Cell{
-    struct player p;
+    struct Player player;
     short int Stone_Num;
     bool IsInUse;
-}
+};
 
 //create the gride 
 void Initial(){
-    vector<vector<Grid_Cell> > G;
+    Game_Grid G;
     for (short int i = 0 ; i < Max ; i++){
         for (short int j = 0 ; j < Max ; j++){
             G.Grid[i][j].IsInUse = false;
