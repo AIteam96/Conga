@@ -13,6 +13,7 @@ struct Game_Grid{
 struct Player{
     short int Wich_Player; //1 , 2
     short int Max_Depth;
+	short int score;
 };
 
 struct Grid_Cell{
@@ -194,6 +195,13 @@ Game_Grid move(Player turn, short int direction, pair<short int, short int> curr
 		else
 			G.Grid[current_location.first][current_location.second].Stone_Num = allStones - stonesCount - 1;
 	}
-
+		return G;
+}
+float MaxVaue(Game_Grid G,Player player)
+{
+	 
+}
+Game_Grid minimax(Game_Grid G, Player player)
+{
 
 }
