@@ -184,7 +184,7 @@ Game_Grid move(Player Turn, short int direction, pair<short int, short int> curr
 	}
 	return G;
 }
-/ بعد از هر حرکت بازیکن چک میشود که آیا حریف در حرکت قبلی خود تمام مهره های خود را استفاده کرده است یا خیر.اگر استفاده کرده بود حریف بازنده میشود
+// بعد از هر حرکت بازیکن چک میشود که آیا حریف در حرکت قبلی خود تمام مهره های خود را استفاده کرده است یا خیر.اگر استفاده کرده بود حریف بازنده میشود
 bool TerminalCheck1(Game_Grid G, Player player) {
 	for (short int i = 0; i < Max; i++) {
 		for (short int j = 0; j < Max; j++) {
@@ -195,11 +195,15 @@ bool TerminalCheck1(Game_Grid G, Player player) {
 	}
 }
 // بعد از انجام هر مرحله چک میشود که آیا خانه هایی که حریف در آنها مهره دارد، راه برای حرکت دارد یا ندارد درواقع حریف را محاصره کرده یا نه
-short int TerminalCheck2(Game_Grid G, Player player) {
+short int TerminalCheck2(Game_Grid G, Player player) 
+{
 	short int way = 8;
-	for (short int i = 0; i < Max; i++) {
-		for (short int j = 0; j < Max; j++) {
-			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player) {
+	for (short int i = 0; i < Max; i++) 
+	{
+		for (short int j = 0; j < Max; j++)
+		{
+			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player)
+			{
 				//direction 1
 				if (G.Grid[i - 1][j].player.Wich_Player == player.Wich_Player) { way--; }
 				//direction 2
@@ -333,5 +337,77 @@ Game_Grid minimax_pruning(Game_Grid G, Player player1, Player player2)
 {
 	Game_Grid best_Grid = G;
 	float i = MaxValue_Pruning(G, player1, player2, best_Grid, -2.00, 2.00);
+	return best_Grid;
+}
+
+float MaxValue_Pruning_depth(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid, float alpha, float beta)
+{
+	//if(!Terminal(G)){
+	maxplayer.Max_Depth--;
+	vector<Game_Grid> actions = successor(G, maxplayer);
+	float resultVlue = -2.00;
+	int i = 0;
+	while (!actions.empty())
+	{
+		Game_Grid current_State = actions[i]; i++;
+		float currentRating = MinValue_Pruning_depth(G, maxplayer, minplayer, current_State, alpha, beta);
+		if (currentRating > resultVlue)
+		{
+			resultVlue = currentRating;
+			best_Grid = current_State;
+		}
+		if (resultVlue >= beta)
+			return resultVlue;
+		alpha = max(alpha, resultVlue);
+	}
+	return resultVlue;
+	//}
+	/*else
+	return player.score;
+	*/
+}
+float MinValue_Pruning_depth(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid, float alpha, float beta)
+{
+	//if(!Terminal(G)){
+	if (minplayer.Max_Depth == 0)
+	{
+		int i = 0;
+		vector<Game_Grid> actions = successor(G, minplayer);
+		while (!actions.empty())
+		{
+			best_Grid = actions[i]; i++;
+
+			//return hyuristic(best_Grid);
+		}
+	}
+	minplayer.Max_Depth--;
+	vector<Game_Grid> actions = successor(G, minplayer);
+	float resultVlue = +2.00;
+	int i = 0;
+	while (!actions.empty())
+	{
+		Game_Grid current_State = actions[i]; i++;
+		float currentRating = MaxValue_Pruning_depth(G, maxplayer, minplayer, current_State, alpha, beta);
+		if (currentRating < resultVlue)
+		{
+			resultVlue = currentRating;
+			best_Grid = current_State;
+		}
+		if (resultVlue >= alpha)
+			return resultVlue;
+		beta = min(beta, resultVlue);
+	}
+	return resultVlue;
+	//}
+	/*else
+	return player.score;
+	*/
+}
+Game_Grid minimax_pruning_depth(Game_Grid G, Player player1, Player player2, int depth)
+{
+	Game_Grid best_Grid = G;
+	player1.Max_Depth = depth;
+	player2.Max_Depth = depth;
+	float i = MaxValue_Pruning_depth(G, player1, player2, best_Grid, -2.00, 2.00);
 	return best_Grid;
 }
