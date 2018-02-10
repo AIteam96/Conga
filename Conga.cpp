@@ -1,8 +1,8 @@
-#include<iostream>
+﻿#include<iostream>
 #include<vector>
 #include <utility>      // std::pair, std::make_pair
 
-#define MAX 4
+#define Max 4
 using namespace std;
 //Container 
 struct Game_Grid {
@@ -11,7 +11,7 @@ struct Game_Grid {
 
 struct Player {
 	short int Wich_Player; //1 , 2
-	short int MAX_Depth;
+	short int Max_Depth;
 	short int score;
 };
 
@@ -24,8 +24,8 @@ struct Grid_Cell {
 //create the gride 
 void Initial() {
 	Game_Grid G;
-	for (short int i = 0; i < MAX; i++) {
-		for (short int j = 0; j < MAX; j++) {
+	for (short int i = 0; i < Max; i++) {
+		for (short int j = 0; j < Max; j++) {
 			G.Grid[i][j].IsInUse = false;
 			G.Grid[i][j].Stone_Num = 0;
 		}
@@ -37,8 +37,8 @@ vector<Game_Grid> successor(Game_Grid G, Player Turn) {
 	Game_Grid Temp = G;
 	pair<short int, short int> Current;
 
-	for (short int i = 0; i < MAX; i++) {
-		for (short int j = 0; j < MAX; j++) {
+	for (short int i = 0; i < Max; i++) {
+		for (short int j = 0; j < Max; j++) {
 			Current.first = i;
 			Current.second = j;
 			if (i > 1)
@@ -56,27 +56,27 @@ vector<Game_Grid> successor(Game_Grid G, Player Turn) {
 				Temp = move(Turn, 3, Current, Temp);
 				Grid_List.push_back(Temp);
 			}
-			if (i < MAX && j < MAX)
+			if (i < Max && j < Max)
 			{
 				move(Turn, 4, Current, Temp);
 				Grid_List.push_back(Temp);
 			}
-			if (i < MAX)
+			if (i < Max)
 			{
 				Temp = move(Turn, 5, Current, Temp);
 				Grid_List.push_back(Temp);
 			}
-			if (i < MAX && j > 1)
+			if (i < Max && j > 1)
 			{
 				Temp = move(Turn, 6, Current, Temp);
 				Grid_List.push_back(Temp);
 			}
-			if (j < MAX)
+			if (j < Max)
 			{
 				Temp = move(Turn, 7, Current, Temp);
 				Grid_List.push_back(Temp);
 			}
-			if (i > 1 && j < MAX)
+			if (i > 1 && j < Max)
 			{
 				Temp = move(Turn, 8, Current, Temp);
 				Grid_List.push_back(Temp);
@@ -184,7 +184,43 @@ Game_Grid move(Player Turn, short int direction, pair<short int, short int> curr
 	}
 	return G;
 }
-
+/ بعد از هر حرکت بازیکن چک میشود که آیا حریف در حرکت قبلی خود تمام مهره های خود را استفاده کرده است یا خیر.اگر استفاده کرده بود حریف بازنده میشود
+bool TerminalCheck1(Game_Grid G, Player player) {
+	for (short int i = 0; i < Max; i++) {
+		for (short int j = 0; j < Max; j++) {
+			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player) {
+				if (G.Grid[i][j].Stone_Num <= 0) { return true; }
+			}
+		}
+	}
+}
+// بعد از انجام هر مرحله چک میشود که آیا خانه هایی که حریف در آنها مهره دارد، راه برای حرکت دارد یا ندارد درواقع حریف را محاصره کرده یا نه
+short int TerminalCheck2(Game_Grid G, Player player) {
+	short int way = 8;
+	for (short int i = 0; i < Max; i++) {
+		for (short int j = 0; j < Max; j++) {
+			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player) {
+				//direction 1
+				if (G.Grid[i - 1][j].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 2
+				if (G.Grid[i + 1][j - 1].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 3
+				if (G.Grid[i][j - 1].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 4
+				if (G.Grid[i + 1][j - 1].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 5
+				if (G.Grid[i + 1][j].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 6
+				if (G.Grid[i + 1][j + 1].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 7
+				if (G.Grid[i][j + 1].player.Wich_Player == player.Wich_Player) { way--; }
+				//direction 8
+				if (G.Grid[i - 1][j + 1].player.Wich_Player == player.Wich_Player) { way--; }
+			}
+		}
+	}
+	return way;
+}
 float MaxValue(Game_Grid G, Player maxplayer, Player minplayer,Game_Grid &best_Grid)
 {
 	 //if(!Terminal(G)){
@@ -229,9 +265,73 @@ float MinValue(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_
 	return player.score;
 	*/
 }
-Game_Grid miniMAX(Game_Grid G, Player player1, Player player2)
+Game_Grid minimax(Game_Grid G, Player player1, Player player2)
 {
 	Game_Grid best_Grid = G;
 	float i = MaxValue(G, player1, player2, best_Grid);
+	return best_Grid;
+}
+float max(float a, float b)
+{
+	a > b ? a : b;
+}
+float min(float a, float b)
+{
+	a > b ? b : a;
+}
+float MaxValue_Pruning(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid, float alpha, float beta)
+{
+	//if(!Terminal(G)){
+	vector<Game_Grid> actions = successor(G, maxplayer);
+	float resultVlue = -2.00;
+	int i = 0;
+	while (!actions.empty())
+	{
+		Game_Grid current_State = actions[i]; i++;
+		float currentRating = MinValue_Pruning(G, maxplayer, minplayer, current_State, alpha, beta);
+		if (currentRating > resultVlue)
+		{
+			resultVlue = currentRating;
+			best_Grid = current_State;
+		}
+		if (resultVlue >= beta)
+			return resultVlue;
+		alpha = max(alpha, resultVlue);
+	}
+	return resultVlue;
+	//}
+	/*else
+	return player.score;
+	*/
+}
+float MinValue_Pruning(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid, float alpha, float beta)
+{
+	//if(!Terminal(G)){
+	vector<Game_Grid> actions = successor(G, minplayer);
+	float resultVlue = +2.00;
+	int i = 0;
+	while (!actions.empty())
+	{
+		Game_Grid current_State = actions[i]; i++;
+		float currentRating = MaxValue_Pruning(G, maxplayer, minplayer, current_State, alpha, beta);
+		if (currentRating < resultVlue)
+		{
+			resultVlue = currentRating;
+			best_Grid = current_State;
+		}
+		if (resultVlue >= alpha)
+			return resultVlue;
+		beta = min(beta, resultVlue);
+	}
+	return resultVlue;
+	//}
+	/*else
+	return player.score;
+	*/
+}
+Game_Grid minimax_pruning(Game_Grid G, Player player1, Player player2)
+{
+	Game_Grid best_Grid = G;
+	float i = MaxValue_Pruning(G, player1, player2, best_Grid, -2.00, 2.00);
 	return best_Grid;
 }
