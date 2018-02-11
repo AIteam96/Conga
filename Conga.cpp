@@ -1,13 +1,10 @@
 ﻿#include<iostream>
 #include<vector>
 #include <utility>      // std::pair, std::make_pair
+#include <fstream> 
 
 #define Max 4
 using namespace std;
-//Container 
-struct Game_Grid {
-	vector <vector<Grid_Cell> > Grid;
-};
 
 struct Player {
 	short int Wich_Player; //1 , 2
@@ -21,17 +18,85 @@ struct Grid_Cell {
 	bool IsInUse; //true when the cell is already taken O.W flase
 };
 
-//create the gride 
-void Initial() {
-	Game_Grid G;
+//Container 
+struct Game_Grid {
+	vector <vector<Grid_Cell> > Grid;
+};
+
+//create the gride and  
+Game_Grid Initial() {
+	vector<vector<Grid_Cell> > Grid(Max, vector<Grid_Cell>(Max));
+	ofstream file;
+	file.open("C:\\Users\\Lenovo\\Documents\\Visual Studio 2015\\Projects\\CongaGame\\CongaFile.txt");
 	for (short int i = 0; i < Max; i++) {
 		for (short int j = 0; j < Max; j++) {
-			G.Grid[i][j].IsInUse = false;
-			G.Grid[i][j].Stone_Num = 0;
+			Grid[i][j].IsInUse = false;
+			file << "E/0/0  ";
+			Grid[i][j].Stone_Num = 0;
+		}
+		file << "\n";
+	}
+	file.close();
+	Game_Grid G;
+	G.Grid = Grid;
+	return G;
+}
+void UpdateFile(Game_Grid G) {
+	ofstream file;
+	file.open("C:\\Users\\Lenovo\\Documents\\Visual Studio 2015\\Projects\\CongaGame\\CongaFile.txt");
+	for (short int i = 0; i < Max; i++) {
+		for (short int j = 0; j < Max; j++) {
+			file << G.Grid[i][j].IsInUse << "/" << G.Grid[i][j].Stone_Num << "/" << G.Grid[i][j].player.Wich_Player;
 		}
 	}
 }
 
+float Heurestic(Game_Grid G , Player player) {
+	
+	short int grid_way = 0;
+	for (short int i = 0; i < Max; i++) {
+		for (short int j = 0; j < Max; j++) {
+			short int cell_way = 0;
+			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player) {
+				//condition1
+				if (j < 4) {
+					if (!G.Grid[i][j + 1].IsInUse || !G.Grid[i][j + 1].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition2
+				if (i < 4 && j < 4) {
+					if (!G.Grid[i+ 1][j + 1].IsInUse || !G.Grid[i + 1][j + 1].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition3
+				if (i < 4) {
+					if (!G.Grid[i + 1][j].IsInUse || !G.Grid[i + 1][j].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition4
+				if (i < 4 && j > 1) {
+					if (!G.Grid[i + 1][j - 1].IsInUse || !G.Grid[i + 1][j - 1].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition5
+				if (j > 1) {
+					if (!G.Grid[i][j - 1].IsInUse || !G.Grid[i][j - 1].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition6
+				if (i > 1 && j > 0) {
+					if (!G.Grid[i - 1][j - 1].IsInUse || !G.Grid[i - 1][j - 1].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition7
+				if (i > 1) {
+					if (!G.Grid[i - 1][j].IsInUse || !G.Grid[i - 1][j].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				//condition8
+				if (i > 1 && j < 4) {
+					if (!G.Grid[i - 1][j + 1].IsInUse || !G.Grid[i - 1][j + 1].player.Wich_Player != player.Wich_Player) { cell_way++; }
+				}
+				
+			}
+			grid_way = grid_way + cell_way;
+		}
+	}
+	return grid_way;
+}
 vector<Game_Grid> successor(Game_Grid G, Player Turn) {
 	vector<Game_Grid> Grid_List;
 	Game_Grid Temp = G;
@@ -134,7 +199,7 @@ Game_Grid move(Player Turn, short int direction, pair<short int, short int> curr
 	}
 	short int stonesCount = 1;
 	short int allStones = G.Grid[current_location.first][current_location.second].Stone_Num;
-	while (0 <= next_step.first <= 4 && 0 <= next_step.second <= 4 && !G.Grid[next_step.first][next_step.second].IsInUse || G.Grid[next_step.first][next_step.second].player.Wich_Player == Turn.Wich_Player)
+	while (0 < next_step.first <= 4 && 0 < next_step.second <= 4 && !G.Grid[next_step.first][next_step.second].IsInUse || G.Grid[next_step.first][next_step.second].player.Wich_Player == Turn.Wich_Player)
 	{
 		G.Grid[next_step.first][next_step.second].IsInUse = true;
 		G.Grid[next_step.first][next_step.second].player = Turn;
@@ -182,28 +247,15 @@ Game_Grid move(Player Turn, short int direction, pair<short int, short int> curr
 		else
 			G.Grid[current_location.first][current_location.second].Stone_Num = allStones - stonesCount - 1;
 	}
+
 	return G;
 }
-// بعد از هر حرکت بازیکن چک میشود که آیا حریف در حرکت قبلی خود تمام مهره های خود را استفاده کرده است یا خیر.اگر استفاده کرده بود حریف بازنده میشود
-bool TerminalCheck1(Game_Grid G, Player player) {
+// بعد از انجام هر مرحله چک میشود که آیا خانه هایی که حریف در آنها مهره دارد، راه برای حرکت دارد یا ندارد درواقع حریف را محاصره کرده یا نه
+short int TerminalCheck2(Game_Grid G, Player player) {
+	short int way = 8;
 	for (short int i = 0; i < Max; i++) {
 		for (short int j = 0; j < Max; j++) {
 			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player) {
-				if (G.Grid[i][j].Stone_Num <= 0) { return true; }
-			}
-		}
-	}
-}
-// بعد از انجام هر مرحله چک میشود که آیا خانه هایی که حریف در آنها مهره دارد، راه برای حرکت دارد یا ندارد درواقع حریف را محاصره کرده یا نه
-short int TerminalCheck2(Game_Grid G, Player player) 
-{
-	short int way = 8;
-	for (short int i = 0; i < Max; i++) 
-	{
-		for (short int j = 0; j < Max; j++)
-		{
-			if (G.Grid[i][j].player.Wich_Player != player.Wich_Player)
-			{
 				//direction 1
 				if (G.Grid[i - 1][j].player.Wich_Player == player.Wich_Player) { way--; }
 				//direction 2
@@ -225,15 +277,22 @@ short int TerminalCheck2(Game_Grid G, Player player)
 	}
 	return way;
 }
-float MaxValue(Game_Grid G, Player maxplayer, Player minplayer,Game_Grid &best_Grid)
+
+bool Terminal(Game_Grid G, Player player) {
+	short int w = TerminalCheck2(G, player);
+	if (w == 0) {
+		player.score = 
+	}
+}
+float MaxValue(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid)
 {
-	 //if(!Terminal(G)){
+	//if(!Terminal(G)){
 	vector<Game_Grid> actions = successor(G, maxplayer);
 	float resultVlue = -2.00;
 	int i = 0;
 	while (!actions.empty())
 	{
-		Game_Grid current_State = actions[i];i++;
+		Game_Grid current_State = actions[i]; i++;
 		float currentRating = MinValue(G, maxplayer, minplayer, current_State);
 		if (currentRating > resultVlue)
 		{
@@ -244,7 +303,7 @@ float MaxValue(Game_Grid G, Player maxplayer, Player minplayer,Game_Grid &best_G
 	return resultVlue;
 	//}
 	/*else
-		return player.score;
+	return player.score;
 	*/
 }
 float MinValue(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid)
@@ -337,77 +396,5 @@ Game_Grid minimax_pruning(Game_Grid G, Player player1, Player player2)
 {
 	Game_Grid best_Grid = G;
 	float i = MaxValue_Pruning(G, player1, player2, best_Grid, -2.00, 2.00);
-	return best_Grid;
-}
-
-float MaxValue_Pruning_depth(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid, float alpha, float beta)
-{
-	//if(!Terminal(G)){
-	maxplayer.Max_Depth--;
-	vector<Game_Grid> actions = successor(G, maxplayer);
-	float resultVlue = -2.00;
-	int i = 0;
-	while (!actions.empty())
-	{
-		Game_Grid current_State = actions[i]; i++;
-		float currentRating = MinValue_Pruning_depth(G, maxplayer, minplayer, current_State, alpha, beta);
-		if (currentRating > resultVlue)
-		{
-			resultVlue = currentRating;
-			best_Grid = current_State;
-		}
-		if (resultVlue >= beta)
-			return resultVlue;
-		alpha = max(alpha, resultVlue);
-	}
-	return resultVlue;
-	//}
-	/*else
-	return player.score;
-	*/
-}
-float MinValue_Pruning_depth(Game_Grid G, Player maxplayer, Player minplayer, Game_Grid &best_Grid, float alpha, float beta)
-{
-	//if(!Terminal(G)){
-	if (minplayer.Max_Depth == 0)
-	{
-		int i = 0;
-		vector<Game_Grid> actions = successor(G, minplayer);
-		while (!actions.empty())
-		{
-			best_Grid = actions[i]; i++;
-
-			//return hyuristic(best_Grid);
-		}
-	}
-	minplayer.Max_Depth--;
-	vector<Game_Grid> actions = successor(G, minplayer);
-	float resultVlue = +2.00;
-	int i = 0;
-	while (!actions.empty())
-	{
-		Game_Grid current_State = actions[i]; i++;
-		float currentRating = MaxValue_Pruning_depth(G, maxplayer, minplayer, current_State, alpha, beta);
-		if (currentRating < resultVlue)
-		{
-			resultVlue = currentRating;
-			best_Grid = current_State;
-		}
-		if (resultVlue >= alpha)
-			return resultVlue;
-		beta = min(beta, resultVlue);
-	}
-	return resultVlue;
-	//}
-	/*else
-	return player.score;
-	*/
-}
-Game_Grid minimax_pruning_depth(Game_Grid G, Player player1, Player player2, int depth)
-{
-	Game_Grid best_Grid = G;
-	player1.Max_Depth = depth;
-	player2.Max_Depth = depth;
-	float i = MaxValue_Pruning_depth(G, player1, player2, best_Grid, -2.00, 2.00);
 	return best_Grid;
 }
